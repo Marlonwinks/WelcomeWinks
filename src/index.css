@@ -1,0 +1,578 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile-specific utilities */
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-optimized {
+    @apply text-sm leading-relaxed;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Welcome Winks Design System - Light Mode */
+
+    /* Base Colors */
+    --background: 0 0% 100%;
+    /* #FFFFFF */
+    --foreground: 0 0% 15%;
+    /* #262626 */
+
+    /* Brand Colors */
+    --primary: 210 100% 14%;
+    /* Deep navy #002248 */
+    --primary-foreground: 0 0% 100%;
+    /* #FFFFFF */
+    --primary-glow: 210 100% 20%;
+
+    --secondary: 39 44% 69%;
+    /* Tan #d1b48c */
+    --secondary-foreground: 0 0% 15%;
+    /* #262626 */
+
+    /* UI Surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+
+    /* Neutrals */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 39 44% 95%;
+    /* Light tan tint */
+    --accent-foreground: 0 0% 15%;
+
+    /* Semantic Colors */
+    --success: 142 76% 45%;
+    /* #34C759 */
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 4 90% 58%;
+    /* #FF453A */
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 48 100% 50%;
+    /* #FFCC00 */
+    --warning-foreground: 215 25% 9%;
+
+    --info: 210 100% 50%;
+    --info-foreground: 0 0% 100%;
+
+    /* Form Elements */
+    --border: 0 0% 85%;
+    --input: 0 0% 95%;
+    --ring: 210 100% 14%;
+    /* Matches primary */
+
+    /* Spacing & Radius */
+    --radius: 0.75rem;
+
+    /* Gradients - Flattened */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)));
+    --gradient-surface: hsl(var(--background));
+    --gradient-hero: linear-gradient(180deg, hsl(var(--primary) / 0.03), transparent);
+
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(var(--primary) / 0.08);
+    --shadow-medium: 0 8px 24px hsl(var(--primary) / 0.12);
+    --shadow-strong: 0 16px 40px hsl(var(--primary) / 0.18);
+
+    /* Transitions */
+    --transition-fast: all 0.15s ease-out;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    /* Welcome Winks Design System - Dark Mode */
+
+    /* Base Colors */
+    --background: 0 0% 8%;
+    /* Dark #141414 */
+    --foreground: 0 0% 95%;
+    /* #F2F2F2 */
+
+    /* Brand Colors */
+    --primary: 210 100% 25%;
+    /* Lighter navy for visibility */
+    --primary-foreground: 0 0% 95%;
+    --primary-glow: 210 100% 35%;
+
+    --secondary: 39 44% 75%;
+    /* Lighter tan */
+    --secondary-foreground: 0 0% 15%;
+
+    /* UI Surfaces */
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Neutrals */
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 39 44% 20%;
+    --accent-foreground: 0 0% 95%;
+
+    /* Semantic Colors */
+    --success: 142 76% 50%;
+    --success-foreground: 215 28% 7%;
+
+    --destructive: 4 90% 65%;
+    --destructive-foreground: 215 28% 7%;
+
+    --warning: 48 100% 60%;
+    --warning-foreground: 215 28% 7%;
+
+    --info: 210 100% 60%;
+    --info-foreground: 215 28% 7%;
+
+    /* Form Elements */
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 210 100% 25%;
+
+    /* Gradients - Flattened */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)));
+    --gradient-surface: hsl(var(--background));
+    --gradient-hero: linear-gradient(180deg, hsl(var(--primary) / 0.05), transparent);
+
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 8px 24px hsl(0 0% 0% / 0.4);
+    --shadow-strong: 0 16px 40px hsl(0 0% 0% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter antialiased;
+    font-feature-settings: "cv03", "cv04", "cv11";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+  }
+
+  /* Custom utility classes */
+  .text-gradient {
+    background: var(--gradient-brand);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Welcome Winks logo specific styling */
+  .welcome-winks-logo {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .shadow-brand {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Map marker pulse animation */
+  .marker-pulse {
+    animation: marker-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes marker-pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+      transform: scale(1.05);
+    }
+  }
+
+  /* Floating button elevation */
+  .floating-cta {
+    box-shadow: var(--shadow-strong);
+    transform: translateZ(0);
+  }
+
+  .floating-cta:hover {
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 20px 48px hsl(var(--primary) / 0.25);
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    background: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+@layer components {
+
+  /* Button variants using design system */
+  .btn-hero {
+    @apply bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-smooth;
+  }
+
+  .btn-floating {
+    @apply btn-hero floating-cta;
+  }
+
+  /* Card variants */
+  .card-glass {
+    @apply glass border border-border/50 shadow-soft;
+  }
+
+  /* Interactive elements */
+  .interactive-scale {
+    @apply transition-smooth hover:scale-105 active:scale-95;
+  }
+}
+
+/* Enhanced Navigation Transitions */
+@layer utilities {
+
+  /* Page transition styles */
+  .transition-fade {
+    transition: opacity 300ms ease-in-out;
+  }
+
+  .transition-slide {
+    transition: transform 300ms ease-in-out, opacity 300ms ease-in-out;
+  }
+
+  .transition-scale {
+    transition: transform 200ms ease-in-out, opacity 200ms ease-in-out;
+  }
+
+  /* Navigation transition states */
+  body.transition-fade {
+    overflow-x: hidden;
+  }
+
+  body.transition-slide {
+    overflow-x: hidden;
+  }
+
+  body.transition-scale {
+    overflow: hidden;
+  }
+
+  /* Smooth back button transitions */
+  .back-button-enter {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  .back-button-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+  }
+
+  .back-button-exit {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .back-button-exit-active {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: opacity 200ms ease-in, transform 200ms ease-in;
+  }
+
+  /* Breadcrumb transitions */
+  .breadcrumb-item {
+    transition: color 200ms ease-in-out, background-color 200ms ease-in-out;
+  }
+
+  .breadcrumb-separator {
+    transition: color 200ms ease-in-out;
+  }
+
+  /* Context-aware navigation states */
+  .nav-onboarding {
+    --nav-bg: hsl(var(--primary) / 0.05);
+    --nav-border: hsl(var(--primary) / 0.1);
+  }
+
+  .nav-app {
+    --nav-bg: hsl(var(--background));
+    --nav-border: hsl(var(--border));
+  }
+
+  /* Smooth focus transitions for accessibility */
+  .focus-smooth {
+    transition: box-shadow 200ms ease-in-out, outline 200ms ease-in-out;
+  }
+
+  .focus-smooth:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.1);
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+
+  .transition-fade,
+  .transition-slide,
+  .transition-scale,
+  .back-button-enter-active,
+  .back-button-exit-active,
+  .breadcrumb-item,
+  .breadcrumb-separator,
+  .focus-smooth {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  body.transition-fade,
+  body.transition-slide,
+  body.transition-scale {
+    overflow: visible !important;
+  }
+}
+
+/* P
+erformance and accessibility optimizations */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (hover: none) and (pointer: coarse) {
+
+  /* Touch device optimizations */
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Larger tap targets for mobile */
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Remove hover effects on touch devices */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+
+  .hover\:shadow-lg:hover {
+    box-shadow: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .border {
+    border-width: 2px;
+  }
+
+  .text-muted-foreground {
+    color: hsl(var(--foreground));
+    opacity: 0.8;
+  }
+
+  .bg-muted {
+    background-color: hsl(var(--background));
+    border: 2px solid hsl(var(--border));
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin {
+    animation: none;
+  }
+
+  .animate-pulse {
+    animation: none;
+  }
+
+  .transition-all {
+    transition: none;
+  }
+}
+
+/* Focus management for accessibility */
+.focus-visible:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Skip link styling */
+.sr-only:focus {
+  position: absolute;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 0.375rem;
+  z-index: 9999;
+}
+
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200px 0;
+  }
+
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.1) 50%, hsl(var(--muted)) 75%);
+  background-size: 200px 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: hsl(var(--muted));
+  }
+}
+
+/* Onboarding specific optimizations */
+.onboarding-container {
+  contain: layout style paint;
+}
+
+.onboarding-step {
+  will-change: transform, opacity;
+}
+
+/* Loading state optimizations */
+.loading-shimmer {
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-shimmer {
+    animation: none;
+    background: hsl(var(--muted));
+  }
+}
+
+/* Google Maps Dark Mode Overrides */
+.dark .gm-style-iw {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .gm-style-iw-c {
+  background-color: hsl(var(--card)) !important;
+  box-shadow: var(--shadow-medium) !important;
+}
+
+.dark .gm-style-iw-t::after {
+  background: linear-gradient(45deg, hsl(var(--card)) 50%, rgba(255, 255, 255, 0) 51%, rgba(255, 255, 255, 0) 100%) !important;
+}
+
+/* Remove the X button background in dark mode or style it */
+.dark .gm-style-iw button.gm-ui-hover-effect {
+  filter: invert(1) !important;
+}
+
+.dark .gm-style-iw button.gm-ui-hover-effect>span {
+  background-color: hsl(var(--muted-foreground)) !important;
+}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome Winks - Find the vibe where you are</title>
+    <meta name="description" content="Discover welcoming places through community insights. Find places where everyone feels comfortable." />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="/2-100.jpg" />
+    <link rel="apple-touch-icon" href="/2-100.jpg" />
+
+    <meta property="og:title" content="Welcome Winks - Find the vibe where you are" />
+    <meta property="og:image" content="/2-100.jpg" />
+    <meta property="og:description" content="Discover welcoming places through community insights. Find places where everyone feels comfortable." />
+    <meta property="og:type" content="website" />
+
+    <meta name="twitter:card" content="summary" />
+    <script>
+      (function () {
+        const storageKey = "theme";
+        const storedTheme = localStorage.getItem(storageKey);
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = storedTheme === "dark" || storedTheme === "light"
+          ? storedTheme
+          : prefersDark
+            ? "dark"
+            : "light";
+        document.documentElement.classList.toggle("dark", theme === "dark");
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

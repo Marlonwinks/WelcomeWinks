@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches('.*@.*\\..*');
+    }
+
+    function isValidCookieId(cookieId) {
+      return cookieId is string && cookieId.size() >= 32;
+    }
+
+    // Small “anti-footgun” helpers (simple + keeps app working)
+    function onlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function notTooBig(maxFields) {
+      return request.resource.data.keys().size() <= maxFields;
+    }
+
+    // Helper: check if a cookie account doc exists for a given id
+    function cookieAccountExists(cookieId) {
+      return exists(/databases/$(database)/documents/cookieAccounts/$(cookieId));
+    }
+
+    // Users collection - full accounts only
+    match /users/{userId} {
+      allow read, update, delete: if isOwner(userId);
+
+      // Create must validate request.resource (not resource)
+      allow create: if isAuthenticated()
+        && request.auth.uid == userId
+        && request.resource.data.accountType == 'full'
+        && isValidEmail(request.resource.data.email)
+        && notTooBig(30);
+    }
+
+    // Cookie accounts collection - anonymous-ish accounts
+    match /cookieAccounts/{cookieId} {
+      // NOTE: This allows anyone who knows the cookieId to read.
+      // If that’s intentional for your flow, keep it. If not, lock it later.
+      allow read: if isValidCookieId(cookieId);
+
+      allow create: if isValidCookieId(cookieId)
+        && request.resource.data.accountType == 'cookie'
+        && request.resource.data.ipAddress is string
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.expiresAt is timestamp
+        && notTooBig(30);
+
+      // WARNING: request.auth.token.ip_address usually DOES NOT exist unless you set it as a custom claim.
+      // This rule will block updates for most setups.
+      // Leaving your intent, but making it not explode when auth is null:
+      allow update: if isValidCookieId(cookieId)
+        && isAuthenticated()
+        && (request.auth.token.ip_address is string)
+        && resource.data.ipAddress == request.auth.token.ip_address
+        && notTooBig(30);
+
+      allow delete: if false; // Cookie accounts expire automatically
+    }
+
+    // Businesses collection - completely open for testing
+    match /businesses/{businessId} {
+      allow read, write: if true;
+    }
+
+    // Ratings collection - completely open for testing
+    match /ratings/{ratingId} {
+      allow read, write: if true;
+    }
+
+    // User profiles collection - linked to users or cookie accounts
+    match /userProfiles/{profileId} {
+      // Owner can read/update/delete
+      allow read, update, delete: if isOwner(profileId);
+
+      // Create by full user OR by cookieId if that cookie account exists
+      allow create: if (isAuthenticated() && request.auth.uid == profileId)
+        || (isValidCookieId(profileId) && cookieAccountExists(profileId));
+    }
+
+    // Rating aggregations collection - system managed, read-only for clients
+    match /ratingAggregations/{businessId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admin collection - restricted to admin users
+    match /admin/{document=**} {
+      allow read, write: if isAuthenticated()
+        && request.auth.token.admin == true;
+    }
+
+    // Audit logs - write-only for tracking, admin read access
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated() && request.auth.token.admin == true;
+      allow create: if isAuthenticated() || (isAuthenticated() && cookieAccountExists(request.auth.uid));
+      allow update, delete: if false;
+    }
+
+    // Audit trail - enhanced security logging
+    match /auditTrail/{auditId} {
+      allow read: if (isAuthenticated() && resource.data.userId is string && request.auth.uid == resource.data.userId)
+        || (isAuthenticated() && request.auth.token.admin == true);
+
+      allow create: if (isAuthenticated() || (isAuthenticated() && cookieAccountExists(request.auth.uid)))
+        && request.resource.data.eventType in ['rating_submission', 'account_creation', 'account_migration', 'login', 'logout']
+        && request.resource.data.userId is string
+        && request.resource.data.timestamp is timestamp
+        && request.resource.data.ipAddress is string;
+
+      allow update, delete: if false;
+    }
+
+    // Suspicious activity flags - admin and system only
+    match /suspiciousActivity/{flagId} {
+      allow read: if isAuthenticated() && request.auth.token.admin == true;
+
+      // Clients cannot create flags
+      allow create: if false;
+
+      allow update: if isAuthenticated() && request.auth.token.admin == true
+        && request.resource.data.status in ['active', 'reviewed', 'dismissed'];
+
+      allow delete: if false;
+    }
+
+    // Rate limiting data - system only (no client access)
+    match /rateLimiting/{identifier} {
+      allow read, write: if false;
+    }
+
+    // Security statistics - TEMPORARILY OPEN FOR SEEDING
+    match /securityStats/{statId} {
+      allow read: if isAuthenticated() && request.auth.token.admin == true;
+      allow write: if true;
+    }
+
+    // Notifications collection - TEMPORARILY OPEN FOR TESTING
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+
+    // Scoring configurations - TEMPORARILY OPEN FOR SEEDING
+    match /scoringConfigs/{configId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Achievements collection - users can read/write their own achievements
+    match /achievements/{achievementId} {
+      // resource.data.userId only exists after creation, so read/update/delete check owner via stored userId:
+      allow read, update, delete: if isAuthenticated()
+        && resource.data.userId is string
+        && request.auth.uid == resource.data.userId;
+
+      allow create: if (isAuthenticated() && request.auth.uid == request.resource.data.userId)
+        || (isValidCookieId(request.resource.data.userId) && cookieAccountExists(request.resource.data.userId));
+    }
+
+    // Business reports collection - TEMPORARILY OPEN FOR TESTING
+    match /businessReports/{reportId} {
+      allow read, write: if true;
+    }
+
+    // ✅ THE “LAST SIMPLE SECURITY RULE”:
+    // Lock down everything you forgot to explicitly match above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
