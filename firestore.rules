@@ -33,14 +33,10 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/cookieAccounts/$(cookieId));
     }
 
-    // Users collection - full accounts and strict access
+    // Users collection - simplified for debugging
     match /users/{userId} {
-      allow read, update, delete: if isOwner(userId);
-      
-      // Allow creation if authenticated and is owner. 
-      // We removed strict 'accountType' and 'email' checks to allow 
-      // anonymous users to have a user doc created by activity tracking.
-      allow create: if isOwner(userId) && notTooBig(30);
+      // Simple ownership check for all operations
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Cookie accounts collection - anonymous-ish accounts
