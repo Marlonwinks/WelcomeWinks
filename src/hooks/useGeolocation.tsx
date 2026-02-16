@@ -184,7 +184,7 @@ export const useGeolocation = () => {
         ...cachedGeocode,
         latitude: lat,
         longitude: lng,
-        accessToken: null, // Add missing property to match LocationData type if needed or just spread
+        accessToken: null,
         accuracy: accuracy || null,
         timestamp: new Date(),
         userConfirmed: autoConfirm,
@@ -197,36 +197,56 @@ export const useGeolocation = () => {
     }
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      let formattedAddress: string | null = null;
 
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`,
-        { signal: controller.signal }
-      );
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw createLocationError('API_ERROR', `Geocoding API returned ${response.status}: ${response.statusText}`);
+      // Prefer Google Maps JS API Geocoder if available
+      if (window.google?.maps) {
+        const geocoder = new google.maps.Geocoder();
+        try {
+          const response = await geocoder.geocode({ location: { lat, lng } });
+          if (response.results && response.results[0]) {
+            formattedAddress = response.results[0].formatted_address;
+          }
+        } catch (error) {
+          console.warn('Google Maps Geocoder failed, trying fallback...', error);
+        }
       }
 
-      const data = await response.json();
+      // Fallback to REST API if JS Geocoder failed or not available (and we have an API key)
+      if (!formattedAddress && API_KEY) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`,
+            { signal: controller.signal }
+          );
+          clearTimeout(timeoutId);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.results && data.results[0]) {
+              formattedAddress = data.results[0].formatted_address;
+            }
+          }
+        } catch (e) {
+          console.warn('REST Geocoding fallback failed', e);
+        }
+      }
 
       let locationData: LocationData;
-      if (data.results && data.results[0]) {
-        const result = data.results[0];
+
+      if (formattedAddress) {
         console.log('📍 Geocoding successful:', {
           lat,
           lng,
-          formatted_address: result.formatted_address,
+          formatted_address: formattedAddress,
           accuracy
         });
         locationData = {
           latitude: lat,
           longitude: lng,
-          city: result.formatted_address,
-          address: result.formatted_address,
+          city: formattedAddress,
+          address: formattedAddress,
           source: 'gps' as LocationSource,
           accuracy: accuracy || null,
           timestamp: new Date(),
@@ -236,8 +256,8 @@ export const useGeolocation = () => {
 
         // Cache successful geocoding for 24 hours
         performanceCache.set(cacheKey, {
-          city: result.formatted_address,
-          address: result.formatted_address,
+          city: formattedAddress,
+          address: formattedAddress,
           source: 'gps' as LocationSource,
           error: null,
         }, 24 * 60 * 60 * 1000);
@@ -246,8 +266,7 @@ export const useGeolocation = () => {
         console.log('📍 Geocoding returned no results, using coordinate fallback:', {
           lat,
           lng,
-          accuracy,
-          status: data.status
+          accuracy
         });
         locationData = {
           latitude: lat,
@@ -269,18 +288,8 @@ export const useGeolocation = () => {
     } catch (error: any) {
       console.error("Reverse geocoding error:", error);
 
-      let locationError: LocationError;
-      if (error.name === 'AbortError') {
-        locationError = LOCATION_ERRORS.TIMEOUT;
-      } else if (error.code) {
-        locationError = error;
-      } else {
-        locationError = createLocationError('API_ERROR', 'Failed to get address for your location');
-      }
-
-      setLastError(locationError);
-
-      // Still set location with coordinates even if geocoding fails
+      // Even if everything fails, we still have the coordinates!
+      // Don't treat this as a fatal error for the user.
       setLocation({
         latitude: lat,
         longitude: lng,
@@ -290,7 +299,7 @@ export const useGeolocation = () => {
         accuracy: accuracy || null,
         timestamp: new Date(),
         userConfirmed: autoConfirm,
-        error: null, // Don't show error if we have coordinates
+        error: null,
       });
       // Still save fallback location to storage
       saveLocationToStorage({
@@ -304,6 +313,8 @@ export const useGeolocation = () => {
         userConfirmed: autoConfirm,
         error: null,
       });
+
+      setLoading(false);
     } finally {
       setLoading(false);
     }

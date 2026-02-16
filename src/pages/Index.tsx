@@ -669,11 +669,31 @@ const Index = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground">No businesses found nearby</p>
-                      <Button variant="link" size="sm" onClick={() => navigate('/mark')}>
-                        Add a business
-                      </Button>
+                    <div className="text-center py-8 space-y-4">
+                      <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                        <MapPin className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium">No places found nearby</p>
+                        <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1">
+                          We couldn't find any user-rated places in this area yet.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                        <Button onClick={() => navigate('/mark')}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Be the first to rate a place
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Start by searching for a place you know!
+                        </p>
+                        {/* Dev helper for seeding */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <Button variant="outline" size="sm" onClick={() => navigate('/admin')} className="mt-2">
+                            Go to Admin to Seed Data
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -749,11 +769,11 @@ const Index = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </section>
+        </div >
+      </section >
 
       {/* CTA Section */}
-      <section className="px-4 mt-8 mb-20 md:mb-8">
+      < section className="px-4 mt-8 mb-20 md:mb-8" >
         <div className="max-w-md mx-auto text-center">
           <h2 className="text-xl font-semibold mb-2">Ready to help your community?</h2>
           <p className="text-muted-foreground mb-6">
@@ -764,8 +784,8 @@ const Index = () => {
             Mark a place
           </Button>
         </div>
-      </section>
-    </div>
+      </section >
+    </div >
   );
 };
 

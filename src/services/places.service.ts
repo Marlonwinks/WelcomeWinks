@@ -83,10 +83,10 @@ class PlacesService {
 
   async searchNearbyPlaces(request: PlacesSearchRequest): Promise<PlacesSearchResult> {
     try {
-      // 1. Bot Detection
+      // 1. Bot Detection (Relaxed - only log warning)
       if (this.isBot()) {
-        console.warn('🤖 PlacesService: Bot detected, blocking request to save costs.');
-        return { places: [], status: 'BOT_DETECTED' };
+        console.warn('🤖 PlacesService: Potential bot behavior detected. Proceeding with caution.');
+        // We don't block anymore to prevent false positives
       }
 
       // 2. Check Cache
@@ -106,7 +106,11 @@ class PlacesService {
 
       // Create a temporary div for the PlacesService
       const tempDiv = document.createElement('div');
-      tempDiv.style.display = 'none';
+      // Use visibility hidden and absolute positioning instead of display: none
+      // because Google Maps might try to observe it
+      tempDiv.style.visibility = 'hidden';
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
       document.body.appendChild(tempDiv);
 
       try {
