@@ -11,7 +11,7 @@ export class CookieAccountService {
   private static instance: CookieAccountService;
   private static readonly COOKIE_KEY = 'welcomeWinks_cookieId';
   private static readonly COOKIE_EXPIRY_DAYS = 45;
-  
+
   public static getInstance(): CookieAccountService {
     if (!CookieAccountService.instance) {
       CookieAccountService.instance = new CookieAccountService();
@@ -25,10 +25,10 @@ export class CookieAccountService {
   async generateCookieId(): Promise<string> {
     try {
       const timestamp = Date.now().toString(36);
-      
+
       // Generate secure random bytes
       const randomBytes = new Uint8Array(32); // Increased to 32 bytes for better security
-      
+
       if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
         crypto.getRandomValues(randomBytes);
       } else {
@@ -37,16 +37,16 @@ export class CookieAccountService {
           randomBytes[i] = Math.floor(Math.random() * 256);
         }
       }
-      
+
       // Convert to base36 string
-      const randomStr = Array.from(randomBytes, byte => 
+      const randomStr = Array.from(randomBytes, byte =>
         byte.toString(36).padStart(2, '0')
       ).join('');
-      
+
       // Add IP-based entropy for additional uniqueness
       const currentIP = await ipAddressService.getCurrentIPAddress();
       const ipHash = ipAddressService.generateIPHash(currentIP, timestamp);
-      
+
       return `cookie_${timestamp}_${randomStr}_${ipHash}`;
     } catch (error) {
       throw createFirestoreError('generateCookieId', error);
@@ -61,9 +61,9 @@ export class CookieAccountService {
       if (!isValidCookieId(cookieId)) {
         throw new Error('Invalid cookie ID format');
       }
-      
+
       const currentIP = await ipAddressService.getCurrentIPAddress();
-      
+
       // Store with timestamp and IP for validation
       const cookieData = {
         id: cookieId,
@@ -72,7 +72,7 @@ export class CookieAccountService {
         ipHash: ipAddressService.generateIPHash(currentIP, cookieId), // For additional validation
         version: '1.0' // For future compatibility
       };
-      
+
       localStorage.setItem(CookieAccountService.COOKIE_KEY, JSON.stringify(cookieData));
     } catch (error) {
       console.warn('Failed to store cookie ID locally:', error);
@@ -86,31 +86,50 @@ export class CookieAccountService {
   async getCookieFromStorage(): Promise<string | null> {
     try {
       const storedData = localStorage.getItem(CookieAccountService.COOKIE_KEY);
-      
+
       if (!storedData) {
         return null;
       }
-      
-      const cookieData = JSON.parse(storedData);
-      
+
+      let cookieData;
+      try {
+        cookieData = JSON.parse(storedData);
+      } catch (e) {
+        // Handle legacy case where just the ID string was stored
+        if (storedData.startsWith('cookie_')) {
+          console.log('Migrating legacy cookie format');
+          cookieData = {
+            id: storedData,
+            expires: Date.now() + (CookieAccountService.COOKIE_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
+            created: Date.now()
+          };
+          // Update storage to new format
+          localStorage.setItem(CookieAccountService.COOKIE_KEY, JSON.stringify(cookieData));
+        } else {
+          console.warn('Invalid cookie data format, clearing');
+          await this.clearCookieFromStorage();
+          return null;
+        }
+      }
+
       // Check if cookie has expired locally
       if (Date.now() > cookieData.expires) {
         await this.clearCookieFromStorage();
         return null;
       }
-      
+
       // Validate cookie ID format
       if (!isValidCookieId(cookieData.id)) {
         await this.clearCookieFromStorage();
         return null;
       }
-      
+
       // Additional validation with IP hash if available
       if (cookieData.ipHash) {
         try {
           const currentIP = await ipAddressService.getCurrentIPAddress();
           const expectedHash = ipAddressService.generateIPHash(currentIP, cookieData.id);
-          
+
           // Allow some flexibility for IP changes
           if (cookieData.ipHash !== expectedHash) {
             const isValidSubnet = ipAddressService.isSameSubnet(currentIP, '0.0.0.0'); // Simplified check
@@ -122,7 +141,7 @@ export class CookieAccountService {
           console.warn('Failed to validate cookie IP hash:', error);
         }
       }
-      
+
       return cookieData.id;
     } catch (error) {
       console.warn('Failed to get cookie ID from storage:', error);
@@ -150,15 +169,15 @@ export class CookieAccountService {
       if (!isValidCookieId(cookieId)) {
         return true; // Invalid cookies are considered expired
       }
-      
+
       const cookieAccount = await authService.getCookieAccount(cookieId);
       const isExpired = !cookieAccount || cookieAccount.isExpired || cookieAccount.expiresAt < new Date();
-      
+
       // If expired, handle cleanup
       if (isExpired && cookieAccount) {
         await this.handleExpiredCookie(cookieId);
       }
-      
+
       return isExpired;
     } catch (error) {
       console.warn('Failed to check cookie expiration:', error);
@@ -174,10 +193,10 @@ export class CookieAccountService {
       if (!isValidCookieId(cookieId)) {
         throw new Error('Invalid cookie ID format');
       }
-      
+
       // Update in Firebase
       await authService.updateCookieActivity(cookieId);
-      
+
       // Update local storage with new expiration
       const currentIP = await ipAddressService.getCurrentIPAddress();
       const cookieData = {
@@ -187,7 +206,7 @@ export class CookieAccountService {
         ipHash: ipAddressService.generateIPHash(currentIP, cookieId),
         version: '1.0'
       };
-      
+
       localStorage.setItem(CookieAccountService.COOKIE_KEY, JSON.stringify(cookieData));
     } catch (error) {
       throw createFirestoreError('extendCookieExpiration', error, { cookieId });
@@ -200,21 +219,21 @@ export class CookieAccountService {
   async getOrCreateCookieAccount(ipAddress?: string): Promise<CookieAccount> {
     try {
       const currentIP = ipAddress || await ipAddressService.getCurrentIPAddress();
-      
+
       // Try to get existing cookie from storage
       const existingCookieId = await this.getCookieFromStorage();
-      
+
       if (existingCookieId) {
         // Check if cookie account still exists and is valid
         const cookieAccount = await authService.getCookieAccount(existingCookieId);
-        
+
         if (cookieAccount && !cookieAccount.isExpired) {
           // Validate IP access
           const hasValidAccess = ipAddressService.validateCookieIPAccess(
-            cookieAccount.ipAddress, 
+            cookieAccount.ipAddress,
             currentIP
           );
-          
+
           if (hasValidAccess) {
             // Extend expiration on activity
             await this.extendCookieExpiration(existingCookieId);
@@ -229,7 +248,7 @@ export class CookieAccountService {
           await this.clearCookieFromStorage();
         }
       }
-      
+
       // Create new cookie account
       return await authService.createCookieAccount(currentIP);
     } catch (error) {
@@ -245,16 +264,16 @@ export class CookieAccountService {
       if (!isValidCookieId(cookieId)) {
         return false;
       }
-      
+
       const cookieAccount = await authService.getCookieAccount(cookieId);
-      
+
       if (!cookieAccount || cookieAccount.isExpired) {
         return false;
       }
-      
+
       // Get current IP if not provided
       const currentIP = currentIpAddress || await ipAddressService.getCurrentIPAddress();
-      
+
       // Use IP service for validation
       return ipAddressService.validateCookieIPAccess(cookieAccount.ipAddress, currentIP);
     } catch (error) {
@@ -306,7 +325,7 @@ export class CookieAccountService {
       if (!isValidCookieId(cookieId)) {
         throw new Error('Invalid cookie ID format');
       }
-      
+
       // This will be handled by the auth service
       // Just clear the local cookie storage
       await this.clearCookieFromStorage();
@@ -324,11 +343,11 @@ export class CookieAccountService {
       const testKey = 'test_storage';
       localStorage.setItem(testKey, 'test');
       localStorage.removeItem(testKey);
-      
+
       // Check for crypto API support (optional but preferred)
-      const hasCrypto = typeof crypto !== 'undefined' && 
-                       typeof crypto.getRandomValues === 'function';
-      
+      const hasCrypto = typeof crypto !== 'undefined' &&
+        typeof crypto.getRandomValues === 'function';
+
       return true; // localStorage is sufficient, crypto is nice-to-have
     } catch (error) {
       console.warn('Browser does not support required features:', error);
@@ -342,18 +361,18 @@ export class CookieAccountService {
   async getCurrentCookieAccount(): Promise<CookieAccount | null> {
     try {
       const cookieId = await this.getCookieFromStorage();
-      
+
       if (!cookieId) {
         return null;
       }
-      
+
       const cookieAccount = await authService.getCookieAccount(cookieId);
-      
+
       if (!cookieAccount || cookieAccount.isExpired) {
         await this.clearCookieFromStorage();
         return null;
       }
-      
+
       return cookieAccount;
     } catch (error) {
       console.warn('Failed to get current cookie account:', error);
@@ -368,13 +387,13 @@ export class CookieAccountService {
     try {
       // Expire the account in Firebase
       await authService.expireCookieAccount(cookieId);
-      
+
       // Clear local storage
       await this.clearCookieFromStorage();
-      
+
       // Clear any cached data
       ipAddressService.clearIPCache();
-      
+
     } catch (error) {
       console.warn('Failed to handle expired cookie:', error);
     }
@@ -386,7 +405,7 @@ export class CookieAccountService {
   async expireCurrentCookie(): Promise<void> {
     try {
       const cookieId = await this.getCookieFromStorage();
-      
+
       if (cookieId) {
         await this.handleExpiredCookie(cookieId);
       }
@@ -401,20 +420,20 @@ export class CookieAccountService {
   async getDaysUntilExpiration(): Promise<number | null> {
     try {
       const cookieId = await this.getCookieFromStorage();
-      
+
       if (!cookieId) {
         return null;
       }
-      
+
       const cookieAccount = await authService.getCookieAccount(cookieId);
-      
+
       if (!cookieAccount || cookieAccount.isExpired) {
         return 0;
       }
-      
+
       const now = new Date();
       const daysUntilExpiry = Math.ceil((cookieAccount.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       return Math.max(0, daysUntilExpiry);
     } catch (error) {
       console.warn('Failed to get days until expiration:', error);
@@ -428,11 +447,11 @@ export class CookieAccountService {
   async shouldShowExpirationWarning(): Promise<boolean> {
     try {
       const daysUntilExpiry = await this.getDaysUntilExpiration();
-      
+
       if (daysUntilExpiry === null) {
         return false;
       }
-      
+
       // Show warning if expiring within 7 days
       return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
     } catch (error) {
@@ -447,25 +466,25 @@ export class CookieAccountService {
   async handleStartupExpiration(): Promise<boolean> {
     try {
       const cookieId = await this.getCookieFromStorage();
-      
+
       if (!cookieId) {
         return false; // No cookie account
       }
-      
+
       const isExpired = await this.checkCookieExpiration(cookieId);
-      
+
       if (isExpired) {
         // Clear everything and treat as new user
         await this.clearCookieFromStorage();
         ipAddressService.clearIPCache();
-        
+
         // Clear any other cached data
         localStorage.removeItem('welcomeWinks_onboardingState');
         localStorage.removeItem('welcomeWinks_userPreferences');
-        
+
         return true; // Account was expired and cleaned up
       }
-      
+
       return false; // Account is still valid
     } catch (error) {
       console.warn('Failed to handle startup expiration:', error);

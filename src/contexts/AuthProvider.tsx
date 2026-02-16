@@ -10,16 +10,16 @@ interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<AppUser>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  
+
   // Cookie account methods
   createCookieAccount: (ipAddress?: string) => Promise<CookieAccount>;
   getCookieAccount: (cookieId: string) => Promise<CookieAccount | null>;
   updateCookieActivity: (cookieId: string) => Promise<void>;
-  
+
   // Account management
   migrateCookieToFullAccount: (cookieId: string, firebaseUser: FirebaseUser) => Promise<void>;
   getCurrentAccount: () => { type: 'full' | 'cookie' | 'none'; data: AppUser | CookieAccount | null };
-  
+
   // Profile management
   getUserProfile: (userId: string) => Promise<UserProfile | null>;
   updateUserProfile: (userId: string, updates: Partial<UserProfile>) => Promise<void>;
@@ -207,7 +207,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Update user profile
   const updateUserProfile = async (userId: string, updates: Partial<UserProfile>): Promise<void> => {
     await authService.updateUserProfile(userId, updates);
-    
+
     // Update local state if it's the current user
     if (authState.userProfile?.userId === userId) {
       setAuthState(prev => ({

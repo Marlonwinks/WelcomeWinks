@@ -28,6 +28,12 @@
             : "light";
         document.documentElement.classList.toggle("dark", theme === "dark");
         document.documentElement.style.colorScheme = theme;
+
+        // Diagnostic Logging
+        console.log('🔧 Environment Diagnosis:', {
+          VITE_FIREBASE_PROJECT_ID: "%VITE_FIREBASE_PROJECT_ID%",
+          VITE_GOOGLE_PLACES_API_KEY: "%VITE_GOOGLE_PLACES_API_KEY%" ? "Set (Ends with ...%VITE_GOOGLE_PLACES_API_KEY%".slice(-4) + ")" : "MISSING",
+        });
       })();
     </script>
   </head>

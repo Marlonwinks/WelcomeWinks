@@ -213,6 +213,13 @@ const Index = () => {
       console.log('📍 Index.tsx - Starting to fetch nearby places');
       setIsLoadingPlaces(true);
 
+      // Double check maps availability before calling service
+      if (!window.google?.maps?.places) {
+        console.warn('📍 Index.tsx - Google Maps Places library missing. Aborting fetch.');
+        setIsLoadingPlaces(false);
+        return;
+      }
+
       try {
         const result = await placesService.searchNearbyPlaces({
           latitude: location.latitude,
@@ -222,6 +229,8 @@ const Index = () => {
 
         console.log('📍 Index.tsx - Places fetched:', result.places.length);
         setNearbyPlaces(result.places);
+
+        // Safety: ensure loading state is cleared
         setIsLoadingPlaces(false);
       } catch (error) {
         console.error('📍 Index.tsx - Error loading places:', error);
@@ -575,14 +584,26 @@ const Index = () => {
       <section className="px-4 mt-8">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-lg font-semibold mb-4">Places near you</h2>
-          <InteractiveMap
-            height="400px"
-            center={mapCenter}
-            places={nearbyPlaces}
-            placeScores={placeScores.scores}
-            onPlacesFetched={handlePlacesFetched}
-            onBusinessSelect={handleBusinessSelect}
-          />
+          {window.google?.maps ? (
+            <InteractiveMap
+              height="400px"
+              center={mapCenter}
+              places={nearbyPlaces}
+              placeScores={placeScores.scores}
+              onPlacesFetched={handlePlacesFetched}
+              onBusinessSelect={handleBusinessSelect}
+            />
+          ) : (
+            <Card className="h-[400px] flex items-center justify-center bg-muted/50">
+              <div className="text-center p-6">
+                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">Map unavailable</h3>
+                <p className="text-muted-foreground max-w-xs mx-auto">
+                  Unable to load Google Maps. Please check your internet connection or API configuration.
+                </p>
+              </div>
+            </Card>
+          )}
         </div>
       </section>
 
